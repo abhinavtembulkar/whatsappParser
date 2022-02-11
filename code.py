@@ -42,6 +42,7 @@ class WhatsApp:
     catalogs = []
 
     def __init__(self, wait=timeout, screenshot=None, session=None):
+        self.sets = set([])
         self.browser = webdriver.Chrome(executable_path=CHROME_PATH)# change path
         self.browser.get("https://web.whatsapp.com/") #to open the WhatsApp web
         # you need to scan the QR code in here (to eliminate this step, I will publish another blog
@@ -179,6 +180,32 @@ class WhatsApp:
         except Exception as e:
             print('ERROR',e)
             return None
+
+    def catalog_scrollers(self,window,scrolls):
+        sleep(3)
+        initial = 72
+        for i in range(0, scrolls):
+            items = self.browser.find_elements(*WhatsAppElements.items)
+            items[i].click()
+
+            sleep(2)
+            catalog_item = self.browser.find_element(*WhatsAppElements.item)
+            string = catalog_item.get_property('innerText')
+
+            ignored_exceptions=(NoSuchElementException,StaleElementReferenceException)
+            item_now = WebDriverWait(self.browser, 4, ignored_exceptions=ignored_exceptions) \
+            .until(EC.presence_of_all_elements_located(WhatsAppElements.items))
+            
+            item_now[i].click()
+            self.browser.execute_script("document.getElementsByClassName('{}')[0].scrollTop={}".format(window,initial))
+            initial+=72
+            print(i)
+            sleep(0.1)
+        sleep(3)
+        items = self.browser.find_elements(*WhatsAppElements.items)
+        print('No. of items in catalogue',len(items))
+
+        self.xl_writer(items)
 
     def chat_scroller(self,scrolls):
         chats = self.browser.find_element(*WhatsAppElements.chats)

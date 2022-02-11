@@ -1,4 +1,6 @@
 	
+from random import random
+import re
 import time
 import datetime as dt
 import json
@@ -14,7 +16,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.common.exceptions import NoSuchElementException, ElementNotVisibleException
+from selenium.common.exceptions import NoSuchElementException, ElementNotVisibleException, StaleElementReferenceException
 from selenium.webdriver.common.alert import Alert
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import TimeoutException
@@ -110,35 +112,73 @@ class WhatsApp:
         self.xl_writer(items)
         
     def xl_writer(self,items):
-        # wb = Workbook()
-        # sheet1 = wb.add_sheet('Sheet 1')
-        # sheet1.write(0,1,'A')
-        # sheet1.write(0,2,'B')
-        # sheet1.write(0,3,'C')
-        # sheet1.write(0,4,'D')
+        wb = Workbook()
+        sheet1 = wb.add_sheet('Sheet 1')
+        sheet1.write(0,0,'Serial No.')
+        sheet1.write(0,1,'Item name')
+        sheet1.write(0,2,'Price')
+        sheet1.write(0,3,'Description')
+        sheet1.write(0,4,'Country of Origin')
+        sheet1.write(0,5,'Link')
+        sheet1.write(0,6,'Item code')
 
-        with open('catalog.txt','w',encoding='utf-8') as file:
-            for item in items:
-                string = self.click_item(item)
+        with open('catalog.txt','w+',encoding='utf-8') as file:
+            for i,item in enumerate(items):
+                string = self.click_item(item,i)
                 print(string)
-                # sheet1.write()
-                # file.write(string+"\n\n")
+                if string is None:
+                    break
+                else:
+                    strings = string.split('\n')
+                    #fixed
+                    sheet1.write(i+1,0,i+1)
+                    sheet1.write(i+1,1,strings[0])
+                    sheet1.write(i+1,4,"India")
 
-        # wb.save('catalog.xls')
+                    # re.search
+                    # sheet1.write(i+1,2,strings[1])
+                    
+                    # re.search("",string)
+                    # sheet1.write(i+1,5,)
+                    
+                    #fixed
+                    code = len(strings)-3
+                    sheet1.write(i+1,6,strings[code])
+                    
+                    file.write(string+"\n\n")
+
+        wb.save(f'catalog{random()}.xls')
 
 
-    def click_item(self,item):
-        sleep(1)
-        # item_now = WebDriverWait(self.browser, 2).until(EC.element_to_be_clickable(WhatsAppElements.items))
-        # item_now.click()
-        item.click()
-        catalog_item = self.browser.find_element(*WhatsAppElements.item)
-        string = catalog_item.get_property('innerText')
-        # WebDriverWait(self.browser, 2).until(EC.presence_of_element_located(WhatsAppElements.back_button))
-        sleep(1)
-        back_button = self.browser.find_element(*WhatsAppElements.back_button)
-        back_button.click()
-        return string
+    def click_item(self,item,i):
+        # sleep(1)
+        # item_now = WebDriverWait(self.browser, 10).until(EC.element_to_be_clickable(WhatsAppElements.items))
+        try:
+            if i==0:
+                self.browser.execute_script(f"document.getElementsByClassName('_3Bc7H KPJpj')[0].scrollTop=0")
+            else:
+                initial=140
+                self.browser.execute_script(f"document.getElementsByClassName('_3Bc7H KPJpj')[0].scrollTop+={initial}")
+                sleep(0.5)
+
+            ignored_exceptions=(NoSuchElementException,StaleElementReferenceException)
+            item_now = WebDriverWait(self.browser, 4, ignored_exceptions=ignored_exceptions) \
+            .until(EC.presence_of_all_elements_located(WhatsAppElements.items))
+            # item_now.click()
+            # item_now = WebDriverWait(self.browser, 10).until(EC.staleness_of(item))
+            # print(item,item_now)
+            item_now[i].click()
+            # item.click()
+            catalog_item = self.browser.find_element(*WhatsAppElements.item)
+            string = catalog_item.get_property('innerText')
+            # WebDriverWait(self.browser, 2).until(EC.presence_of_element_located(WhatsAppElements.back_button))
+            sleep(1)
+            back_button = self.browser.find_element(*WhatsAppElements.back_button)
+            back_button.click()
+            return string
+        except Exception as e:
+            print('ERROR',e)
+            return None
 
     def chat_scroller(self,scrolls):
         chats = self.browser.find_element(*WhatsAppElements.chats)
@@ -146,7 +186,7 @@ class WhatsApp:
         for i in range(0, scrolls):
             print(i)
             self.browser.execute_script(f"document.getElementsByClassName('_33LGR')[0].scrollTop={initial}")
-            initial-=30
+            initial-=60
             sleep(0.5)
     
     def catalog_finder(self,scrolls,name):
@@ -154,7 +194,7 @@ class WhatsApp:
         search.send_keys(name+Keys.ENTER)
         sleep(2)
 
-        initial = 20
+        initial = 40
         for i in range(0, scrolls):
             print(i)
             self.browser.execute_script(f"document.getElementsByClassName('_33LGR')[0].scrollTop-={initial}")

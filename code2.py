@@ -42,7 +42,7 @@ class WhatsApp:
     catalogs = []
 
     def __init__(self, wait=timeout, screenshot=None, session=None):
-        self.sets = set([])
+        self.sets = set()
         self.browser = webdriver.Chrome(executable_path=CHROME_PATH)# change path
         self.browser.get("https://web.whatsapp.com/") #to open the WhatsApp web
         # you need to scan the QR code in here (to eliminate this step, I will publish another blog
@@ -60,7 +60,7 @@ class WhatsApp:
    
     def catalog_scrollers(self,window,scrolls):
         sleep(3)
-        initial = 72
+        initial = 0
         wb = Workbook()
         sheet1 = wb.add_sheet('Sheet 1')
         sheet1.write(0,0,'Serial No.')
@@ -71,43 +71,64 @@ class WhatsApp:
         sheet1.write(0,5,'Link')
         sheet1.write(0,6,'Item code')
 
-        for i in range(0, scrolls):
-            items = self.browser.find_elements(*WhatsAppElements.items)
-            items[i].click()
+        try:
+            j=-1
+            for i in range(0, scrolls):
+                items = self.browser.find_elements(*WhatsAppElements.items)
+                print(j,len(items))
+                if j >= len(items)-1:
+                    j=-1
+                j+=1
+                items[j].click()
 
-            sleep(1)
-            catalog_item = self.browser.find_element(*WhatsAppElements.item)
-            string = catalog_item.get_property('innerText')
-            print(string)
-            print('LENGTH',len(items))
+                sleep(0.5)
+                catalog_item = self.browser.find_element(*WhatsAppElements.item)
+                string = catalog_item.get_property('innerText')
+                print(string)
+                self.sets.add(string)
+                print('LENGTH',len(items))
 
-            # ignored_exceptions=(NoSuchElementException,StaleElementReferenceException)
-            # item_now = WebDriverWait(self.browser, 4, ignored_exceptions=ignored_exceptions) \
-            # .until(EC.presence_of_all_elements_located(WhatsAppElements.items))
-            
-            back_button = self.browser.find_element(*WhatsAppElements.back_button)
-            back_button.click()
-            sleep(2)
+                # ignored_exceptions=(NoSuchElementException,StaleElementReferenceException)
+                # item_now = WebDriverWait(self.browser, 4, ignored_exceptions=ignored_exceptions) \
+                # .until(EC.presence_of_all_elements_located(WhatsAppElements.items))
+                
+                back_button = self.browser.find_element(*WhatsAppElements.back_button)
+                back_button.click()
+                sleep(0.5)
 
+                self.browser.execute_script("document.getElementsByClassName('{}')[0].scrollTop={}".format(window,initial))
+                initial+=72
+        except Exception as e:
+            print(e)
+
+        for i,string in enumerate(self.sets):
             strings = string.split('\n')
             #fixed
             sheet1.write(i+1,0,i+1)
             sheet1.write(i+1,1,strings[0])
             sheet1.write(i+1,4,"India")
 
-            # re.search
-            # sheet1.write(i+1,2,strings[1])
-            
-            # re.search("",string)
-            # sheet1.write(i+1,5,)
-            
+            rs = re.search('₹[1-9][0-9]*,[0-9]*.00',string)
+            if rs is not None:
+                sheet1.write(i+1,2,rs(0))
+                desc=""
+                if(len(strings)==5):
+                    desc +=strings[2]
+                if(len(strings)==6):
+                    desc+=strings[3]
+                sheet1.write(i+1,3,desc)
+            else:
+                desc=""
+                if(len(strings)==5):
+                    desc +=strings[1]
+                if(len(strings)==6):
+                    desc+=strings[2]
+                sheet1.write(i+1,3,desc)
+
             #fixed
             code = len(strings)-3
             sheet1.write(i+1,6,strings[code])
             
-            self.browser.execute_script("document.getElementsByClassName('{}')[0].scrollTop={}".format(window,initial))
-            initial+=72
-            print(i)
 
         wb.save(f'catalog{random()}.xls')
         items = self.browser.find_elements(*WhatsAppElements.items)
@@ -142,7 +163,7 @@ class WhatsApp:
                 print('NOT FOUND')
             sleep(0.1)
         
-        self.catalog_scrollers('_3Bc7H KPJpj',100)
+        self.catalog_scrollers('_3Bc7H KPJpj',164)
 
 
 whatsapp = WhatsApp(100, session="mysession")

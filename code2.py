@@ -84,13 +84,9 @@ class WhatsApp:
                 sleep(0.5)
                 catalog_item = self.browser.find_element(*WhatsAppElements.item)
                 string = catalog_item.get_property('innerText')
-                print(string)
+                # print(string)
                 self.sets.add(string)
                 print('LENGTH',len(items))
-
-                # ignored_exceptions=(NoSuchElementException,StaleElementReferenceException)
-                # item_now = WebDriverWait(self.browser, 4, ignored_exceptions=ignored_exceptions) \
-                # .until(EC.presence_of_all_elements_located(WhatsAppElements.items))
                 
                 back_button = self.browser.find_element(*WhatsAppElements.back_button)
                 back_button.click()
@@ -108,31 +104,35 @@ class WhatsApp:
             sheet1.write(i+1,1,strings[0])
             sheet1.write(i+1,4,"India")
 
-            rs = re.search('₹[1-9][0-9]*,[0-9]*.00',string)
+            search_string = ""
+            for j in range(1,len(strings)):
+                search_string+=strings[j]
+
+            rs = re.search('₹[1-9][0-9]*,[0-9]*(.00)*|₹[1-9][0-9]*(.00)*',search_string)
             if rs is not None:
-                sheet1.write(i+1,2,rs(0))
-                desc=""
-                if(len(strings)==5):
-                    desc +=strings[2]
-                if(len(strings)==6):
-                    desc+=strings[3]
-                sheet1.write(i+1,3,desc)
-            else:
-                desc=""
-                if(len(strings)==5):
-                    desc +=strings[1]
-                if(len(strings)==6):
-                    desc+=strings[2]
+                sheet1.write(i+1,2,rs.group(0))
+                
+            #fixed
+            rs = re.search('R( )*[-_]( )*[0-9]+',search_string)
+            if rs is not None:
+                itemcode = rs.group(0)
+                sheet1.write(i+1,6,itemcode)
+
+            rs = re.split(r'₹[1-9][0-9]*,[0-9]*.00|₹[1-9][0-9]*.00|R( )*[-_]( )*[0-9]+|MESSAGE BUSINESS|ADD TO CART',search_string)
+            if rs is not None:
+                desc = ""
+                for strs in rs:
+                    if strs is not (None or '' or ' '):
+                        try:
+                            desc=desc+strs+" "
+                        except:
+                            desc=desc
+                # print(rs)
                 sheet1.write(i+1,3,desc)
 
-            #fixed
-            code = len(strings)-3
-            sheet1.write(i+1,6,strings[code])
-            
 
         wb.save(f'catalog{random()}.xls')
-        items = self.browser.find_elements(*WhatsAppElements.items)
-        print('No. of items in catalogue',len(items))
+        print('No. of items in catalogue',len(self.sets))
 
         # self.xl_writer(items)
 
@@ -163,7 +163,7 @@ class WhatsApp:
                 print('NOT FOUND')
             sleep(0.1)
         
-        self.catalog_scrollers('_3Bc7H KPJpj',164)
+        self.catalog_scrollers('_3Bc7H KPJpj',120)
 
 
 whatsapp = WhatsApp(100, session="mysession")

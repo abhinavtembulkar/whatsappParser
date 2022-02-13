@@ -2,7 +2,6 @@
 from random import random
 import re
 import datetime as dt
-import sys
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -52,7 +51,6 @@ class WhatsApp:
    
     def catalog_scrollers(self,window,scrolls):
         sleep(3)
-        initial = 0
        
         try:
             for i in range(0, scrolls):
@@ -168,7 +166,15 @@ class WhatsApp:
         
         self.catalog_scrollers('_3Bc7H KPJpj',150)
 
+    def prompter(self):
+        self.browser.execute_script("\
+            const name = prompt('Enter exact name of person who has catalogs in chat:') \
+            const name_div = document.createElement('div')\
+            name_div.setAttribute('id','name_catalog') \
+        ")
+        
 
 whatsapp = WhatsApp(100, session="mysession")
-whatsapp.catalog_finder(1000,sys.argv[1])
+whatsapp.prompter()
+whatsapp.catalog_finder(1000,'Anurag भाऊ')
 exit(whatsapp)

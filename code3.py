@@ -3,14 +3,7 @@ from random import random
 import re
 import time
 import datetime as dt
-import json
-import os
-from turtle import back
-from numpy import double
-import requests
-import shutil
-import pickle
-from PIL import Image
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -20,8 +13,6 @@ from selenium.common.exceptions import NoSuchElementException, ElementNotVisible
 from selenium.webdriver.common.alert import Alert
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.chrome.options import Options
-from urllib.parse import urlencode
 from bs4 import BeautifulSoup
 from time import sleep
 from xlwt import Workbook
@@ -139,7 +130,7 @@ class WhatsApp:
 
     def chat_scroller(self,scrolls):
         chats = self.browser.find_element(*WhatsAppElements.chats)
-        initial = double(chats.get_attribute('scrollTop'))
+        initial = float(chats.get_attribute('scrollTop'))
         for i in range(0, scrolls):
             print(i)
             self.browser.execute_script(f"document.getElementsByClassName('_33LGR')[0].scrollTop={initial}")

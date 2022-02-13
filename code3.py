@@ -1,7 +1,6 @@
 	
 from random import random
 import re
-import time
 import datetime as dt
 
 from selenium import webdriver
@@ -34,6 +33,7 @@ class WhatsApp:
 
     def __init__(self, wait=timeout, screenshot=None, session=None):
         self.sets = set()
+        self.store = set()
         self.browser = webdriver.Chrome(executable_path=CHROME_PATH)# change path
         self.browser.get("https://web.whatsapp.com/") #to open the WhatsApp web
         # you need to scan the QR code in here (to eliminate this step, I will publish another blog
@@ -52,6 +52,45 @@ class WhatsApp:
     def catalog_scrollers(self,window,scrolls):
         sleep(3)
         initial = 0
+       
+        try:
+            for i in range(0, scrolls):
+                self.items = self.browser.find_elements(*WhatsAppElements.items)
+                
+                j=0
+                while True:
+                    try:
+                        item = self.items[j]
+                    except Exception as e:
+                        print(e)
+                        break
+                    item_title = item.get_property('innerText')
+                    if not (item_title in self.store) :
+                        item.click()
+                        self.store.add(item_title)
+            
+                        sleep(0.4)
+                        catalog_item = self.browser.find_element(*WhatsAppElements.item)
+                        string = catalog_item.get_property('innerText')
+                        self.sets.add(string)
+                        print('LENGTH',len(self.items))
+                        
+                        back_button = self.browser.find_element(*WhatsAppElements.back_button)
+                        back_button.click()
+                        sleep(0.4)
+
+                        self.items = self.browser.find_elements(*WhatsAppElements.items)
+                        j=0
+                    else:
+                        j+=1
+
+                self.browser.execute_script("document.getElementsByClassName('{}')[0].scrollTop={}".format(window,72*i))
+        except Exception as e:
+            print(e)
+
+        self.xls_writer()
+
+    def xls_writer(self):
         wb = Workbook()
         sheet1 = wb.add_sheet('Sheet 1')
         sheet1.write(0,0,'Serial No.')
@@ -61,33 +100,6 @@ class WhatsApp:
         sheet1.write(0,4,'Country of Origin')
         sheet1.write(0,5,'Link')
         sheet1.write(0,6,'Item code')
-
-        try:
-            j=-1
-            for i in range(0, scrolls):
-                items = self.browser.find_elements(*WhatsAppElements.items)
-                print(j,len(items))
-                if j >= len(items)-1:
-                    j=-1
-                j+=1
-                items[j].click()
-
-                sleep(0.5)
-                catalog_item = self.browser.find_element(*WhatsAppElements.item)
-                string = catalog_item.get_property('innerText')
-                # print(string)
-                self.sets.add(string)
-                print('LENGTH',len(items))
-                
-                back_button = self.browser.find_element(*WhatsAppElements.back_button)
-                back_button.click()
-                sleep(0.5)
-
-                if i % 15 == 0 and i!=0:
-                    initial+=(72*15)
-                    self.browser.execute_script("document.getElementsByClassName('{}')[0].scrollTop={}".format(window,initial))
-        except Exception as e:
-            print(e)
 
         for i,string in enumerate(self.sets):
             strings = string.split('\n')
@@ -122,11 +134,9 @@ class WhatsApp:
                 # print(rs)
                 sheet1.write(i+1,3,desc)
 
-
         wb.save(f'catalog{random()}.xls')
         print('No. of items in catalogue',len(self.sets))
 
-        # self.xl_writer(items)
 
     def chat_scroller(self,scrolls):
         chats = self.browser.find_element(*WhatsAppElements.chats)
@@ -155,7 +165,7 @@ class WhatsApp:
                 print('NOT FOUND')
             sleep(0.1)
         
-        self.catalog_scrollers('_3Bc7H KPJpj',100)
+        self.catalog_scrollers('_3Bc7H KPJpj',150)
 
 
 whatsapp = WhatsApp(100, session="mysession")
